@@ -1,0 +1,14 @@
+# 只把整理后的 Markdown 纳入版本管理；原始大文件不入库
+inbox/
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.mp3
+*.wav
+*.m4a
+*.part
+!notes/**/*.wav
+tools/
+__pycache__/
+.DS_Store
