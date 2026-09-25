@@ -12,3 +12,6 @@ inbox/
 tools/
 __pycache__/
 .DS_Store
+
+# 保留目录占位（目录本身仍被忽略）
+!inbox/.gitkeep
