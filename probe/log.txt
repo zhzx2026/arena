@@ -1,0 +1,77 @@
+===== proxy =====
+http_code=403 size=0 type= redir=0 url=https://dl1.534532.xyz/res/dl?url=https%3A%2F%2Fv26-cold.douyinvod.com%2F37430db275efa70c6479aba19997f9e4%2F6ac11b6f%2Fvideo%2Ftos%2Fcn%2Ftos-cn-ve-15%2Fo8AQxFSaeYBRDGj77fqCi1B2AaEkBYzE1SNzIf%2F%3Fa%3D1128%26ch%3D0%26cr%3D0%26dr%3D0%26cd%3D0%257C0%257C0%257C0%26cv%3D1%26br%3D856%26bt%3D856%26cs%3D0%26ds%3D3%26ft%3DMgtpHQQqUYqfJEZPo0OW_QYaUqiXdpOY9VJEQzO9sbPD-Ipz%26mime_type%3Dvideo_mp4%26qs%3D0%26rc%3DNmRlaTU0ZzNlaTdmOjg5NUBpanQ5Z3U5cjlrNzMzNGkzM0BhMC8xYi00XzAxYmAtNF80YSNzZl8tMmRrY2xhLS1kLWFzcw%253D%253D%26btag%3D80010e000b7001%26cquery%3D100y_10sH%26dy_q%3D1791036195%26feature_id%3Dfea919893f650a8c49286568590446ef%26l%3D2026100322031548870A6C3B59E32932A7&hash=6015aa2fa79b795e0be905aaa706656f71419fcde324c132914e92911199272d&timestamp=1791036195880
+-- headers --
+HTTP/2 403 
+date: Sun, 04 Oct 2026 14:51:37 GMT
+content-length: 0
+server: cloudflare
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-cache-status: DYNAMIC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=lRtp91Xu7aCncwfNSNMCcQ4JJiveh3JnboZTP7rqNjoWw2rlVhZQElMxBZHUXJFDSkONQ%2BkrEb8%2B0gQ1O3TNl4dAJ960erXikkcnAZhGmqNZcnKUS79pQmLC1b1aOAep4w%3D%3D"}]}
+cf-ray: a45501749d82b90a-IAD
+alt-svc: h3=":443"; ma=86400
+
+-- file --
+probe/proxy.bin: empty
+-- xxd --
+-- text head --
+b''
+===== direct =====
+curl: (28) Connection timed out after 60000 milliseconds
+http_code=000 size=0 type= redir=0 url=https://v26.douyinvod.com/37430db275efa70c6479aba19997f9e4/6ac11b6f/video/tos/cn/tos-cn-ve-15/o8AQxFSaeYBRDGj77fqCi1B2AaEkBYzE1SNzIf/?a=1128&ch=0&cr=0&dr=0&cd=0%7C0%7C0%7C0&cv=1&br=856&bt=856&cs=0&ds=3&mime_type=video_mp4
+curl_fail=28
+-- headers --
+-- file --
+probe/direct.bin: cannot open `probe/direct.bin' (No such file or directory)
+-- xxd --
+xxd: probe/direct.bin: No such file or directory
+-- text head --
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: 'probe/direct.bin'
+===== alt =====
+http_code=403 size=0 type= redir=0 url=https://f.666916.xyz/res/dl?url=https%3A%2F%2Fexample.com&hash=6015aa2fa79b795e0be905aaa706656f71419fcde324c132914e92911199272d&timestamp=1791036195880
+-- headers --
+HTTP/2 403 
+date: Sun, 04 Oct 2026 14:52:37 GMT
+content-length: 0
+server: cloudflare
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-cache-status: DYNAMIC
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=4bJmU8dT0iKxNd%2B9iHBFaSPbMFU9Vpd4%2Baij4cUMPT3y0bmtKUmKDNRABvMbnxlDCjuciYqDh8zGLI5oGtAVy%2FFTE7TBwaOGQdZMrIrWME0t3BnkiVIO%2FZ5cbm%2BZAe8%3D"}]}
+cf-ray: a45502f04f77b90a-IAD
+alt-svc: h3=":443"; ma=86400
+
+-- file --
+probe/alt.bin: empty
+-- xxd --
+-- text head --
+b''
+===== home =====
+http_code=200 size=896 type=text/html redir=0 url=https://dl1.534532.xyz/
+-- headers --
+HTTP/2 200 
+date: Sun, 04 Oct 2026 14:52:38 GMT
+content-type: text/html
+server: cloudflare
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+last-modified: Wed, 17 Jun 2026 14:48:09 GMT
+vary: accept-encoding
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=q%2BjgCU5ECazSwczsFimoJyu7mjSYOQZAyfgNP1Xb1FEWoFBKM05yitKppKN8L4PRNFtvaAhcWTPZdGGSNaFM%2Fgv1y7Pd7Jwb99D2U4S5kCxnCAzuJ8LHpgub%2FsQ00xIJUA%3D%3D"}]}
+cf-cache-status: DYNAMIC
+cf-ray: a45502f0ab1fd10e-IAD
+alt-svc: h3=":443"; ma=86400
+
+-- file --
+probe/home.bin: HTML document, ASCII text
+-- xxd --
+00000000: 3c21 444f 4354 5950 4520 6874 6d6c 3e0a  <!DOCTYPE html>.
+00000010: 3c68 746d 6c3e 0a3c 6865 6164 3e0a 3c74  <html>.<head>.<t
+00000020: 6974 6c65 3e57 656c 636f 6d65 2074 6f20  itle>Welcome to 
+00000030: 6e67 696e 7821 3c2f 7469 746c 653e 0a3c  nginx!</title>.<
+00000040: 7374 796c 653e 0a68 746d 6c20 7b20 636f  style>.html { co
+00000050: 6c6f 722d 7363 6865 6d65 3a20 6c69 6768  lor-scheme: ligh
+00000060: 7420 6461 726b 3b20 7d0a 626f 6479 207b  t dark; }.body {
+00000070: 2077 6964 7468 3a20 3335 656d 3b20 6d61   width: 35em; ma
+-- text head --
+b'<!DOCTYPE html>\n<html>\n<head>\n<title>Welcome to nginx!</title>\n<style>\nhtml { color-scheme: light dark; }\nbody { width: 35em; margin: 0 auto;\nfont-family: Tahoma, Verdana, Arial, sans-serif; }\n</style>\n</head>\n<body>\n<h1>Welcome to nginx!</h1>\n<p>If you see this page, nginx is successfully installed and working.\nFurther configuration is required for the web server, reverse proxy, \nAPI gateway, load balancer, content cache, or other features.</p>\n\n<p>For online documentation and support please refer to\n<a href="https://nginx.org/">nginx.org</a>.<br/>\nTo engage with the community please visit\n<a href="https://community.nginx.org/">community.nginx.org</a>.<br/>\nFor enterprise grade support, professional services, additional \nsecurity features and capabilities please refer to\n<a href="https://'
