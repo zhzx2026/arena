@@ -6,88 +6,72 @@ on:
     paths:
       - .github/workflows/fetch-lecture.yml
       - .github/fetch-lecture.trigger
+permissions:
+  contents: write
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/01a1075d-arena
+          fetch-depth: 1
       - name: Probe and download
         run: |
           set -u
-          mkdir -p "$GITHUB_WORKSPACE/out"
-          URL='https://dl1.534532.xyz/res/dl?url=https%3A%2F%2Fv26-cold.douyinvod.com%2F37430db275efa70c6479aba19997f9e4%2F6ac11b6f%2Fvideo%2Ftos%2Fcn%2Ftos-cn-ve-15%2Fo8AQxFSaeYBRDGj77fqCi1B2AaEkBYzE1SNzIf%2F%3Fa%3D1128%26ch%3D0%26cr%3D0%26dr%3D0%26cd%3D0%257C0%257C0%257C0%26cv%3D1%26br%3D856%26bt%3D856%26cs%3D0%26ds%3D3%26ft%3DMgtpHQQqUYqfJEZPo0OW_QYaUqiXdpOY9VJEQzO9sbPD-Ipz%26mime_type%3Dvideo_mp4%26qs%3D0%26rc%3DNmRlaTU0ZzNlaTdmOjg5NUBpanQ5Z3U5cjlrNzMzNGkzM0BhMC8xYi00XzAxYmAtNF80YSNzZl8tMmRrY2xhLS1kLWFzcw%253D%253D%26btag%3D80010e000b7001%26cquery%3D100y_10sH%26dy_q%3D1791036195%26feature_id%3Dfea919893f650a8c49286568590446ef%26l%3D2026100322031548870A6C3B59E32932A7&hash=6015aa2fa79b795e0be905aaa706656f71419fcde324c132914e92911199272d&timestamp=1791036195880'
-          DIRECT='https://v26.douyinvod.com/37430db275efa70c6479aba19997f9e4/6ac11b6f/video/tos/cn/tos-cn-ve-15/o8AQxFSaeYBRDGj77fqCi1B2AaEkBYzE1SNzIf/?a=1128&ch=0&cr=0&dr=0&cd=0%7C0%7C0%7C0&cv=1&br=856&bt=856&cs=0&ds=3&ft=MgtpHQQqUYqfJEZPo0OW_QYaUqiXdpOY9VJEQzO9sbPD-Ipz&mime_type=video_mp4&qs=0&rc=NmRlaTU0ZzNlaTdmOjg5NUBpanQ5Z3U5cjlrNzMzNGkzM0BhMC8xYi00XzAxYmAtNF80YSNzZl8tMmRrY2xhLS1kLWFzcw%3D%3D&btag=80010e000b7001&cquery=100y_10sH&dy_q=1791036195&feature_id=fea919893f650a8c49286568590446ef&l=2026100322031548870A6C3B59E32932A7'
+          mkdir -p probe
           UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-          echo "=== proxy ===" | tee "$GITHUB_WORKSPACE/out/log.txt"
-          curl -L --retry 2 --max-time 180 -A "$UA" -D "$GITHUB_WORKSPACE/out/headers.txt" -o "$GITHUB_WORKSPACE/out/video.bin" "$URL" || echo "proxy_curl_exit=$?" | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-          echo "proxy_bytes=$(wc -c < "$GITHUB_WORKSPACE/out/video.bin" 2>/dev/null || echo 0)" | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-          file "$GITHUB_WORKSPACE/out/video.bin" | tee -a "$GITHUB_WORKSPACE/out/log.txt" || true
-          echo '--- proxy headers ---' | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-          cat "$GITHUB_WORKSPACE/out/headers.txt" | tee -a "$GITHUB_WORKSPACE/out/log.txt" || true
-          # if proxy failed, try direct CDN
-          if ! xxd "$GITHUB_WORKSPACE/out/video.bin" | head -1 | grep -q 'ftyp'; then
-            echo "=== direct cdn ===" | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-            curl -L --retry 2 --max-time 180 -A "$UA" -e 'https://www.douyin.com/' -D "$GITHUB_WORKSPACE/out/headers-direct.txt" -o "$GITHUB_WORKSPACE/out/video.bin" "$DIRECT" || echo "direct_curl_exit=$?" | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-            echo "direct_bytes=$(wc -c < "$GITHUB_WORKSPACE/out/video.bin" 2>/dev/null || echo 0)" | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-            file "$GITHUB_WORKSPACE/out/video.bin" | tee -a "$GITHUB_WORKSPACE/out/log.txt" || true
-            echo '--- direct headers ---' | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-            cat "$GITHUB_WORKSPACE/out/headers-direct.txt" | tee -a "$GITHUB_WORKSPACE/out/log.txt" || true
-          fi
-          xxd "$GITHUB_WORKSPACE/out/video.bin" | head -3 | tee -a "$GITHUB_WORKSPACE/out/log.txt" || true
-      - name: Extract frames if video
-        run: |
-          set -u
-          f="$GITHUB_WORKSPACE/out/video.bin"
-          if ! xxd "$f" | head -1 | grep -q 'ftyp'; then
-            echo 'NOT_A_VIDEO' | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-            rm -f "$f"
-            exit 0
-          fi
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-          mkdir -p "$GITHUB_WORKSPACE/out/frames"
-          ffprobe -v error -show_entries format=duration,format_name,size -show_entries stream=codec_type,width,height,codec_name -of json "$f" > "$GITHUB_WORKSPACE/out/probe.json"
-          cat "$GITHUB_WORKSPACE/out/probe.json"
-          dur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")
-          echo "duration=$dur" | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-          # 1 fps, but cap extremely long videos at 2s interval after 3 minutes by using fps=1/2 if long
-          fps='fps=1'
-          python3 - << PY
-          dur=float("$dur" or 0)
-          print(dur)
-          open("/tmp/fps.txt","w").write("fps=1" if dur < 240 else "fps=1/2")
+          PROXY='https://dl1.534532.xyz/res/dl?url=https%3A%2F%2Fv26-cold.douyinvod.com%2F37430db275efa70c6479aba19997f9e4%2F6ac11b6f%2Fvideo%2Ftos%2Fcn%2Ftos-cn-ve-15%2Fo8AQxFSaeYBRDGj77fqCi1B2AaEkBYzE1SNzIf%2F%3Fa%3D1128%26ch%3D0%26cr%3D0%26dr%3D0%26cd%3D0%257C0%257C0%257C0%26cv%3D1%26br%3D856%26bt%3D856%26cs%3D0%26ds%3D3%26ft%3DMgtpHQQqUYqfJEZPo0OW_QYaUqiXdpOY9VJEQzO9sbPD-Ipz%26mime_type%3Dvideo_mp4%26qs%3D0%26rc%3DNmRlaTU0ZzNlaTdmOjg5NUBpanQ5Z3U5cjlrNzMzNGkzM0BhMC8xYi00XzAxYmAtNF80YSNzZl8tMmRrY2xhLS1kLWFzcw%253D%253D%26btag%3D80010e000b7001%26cquery%3D100y_10sH%26dy_q%3D1791036195%26feature_id%3Dfea919893f650a8c49286568590446ef%26l%3D2026100322031548870A6C3B59E32932A7&hash=6015aa2fa79b795e0be905aaa706656f71419fcde324c132914e92911199272d&timestamp=1791036195880'
+          DIRECT='https://v26.douyinvod.com/37430db275efa70c6479aba19997f9e4/6ac11b6f/video/tos/cn/tos-cn-ve-15/o8AQxFSaeYBRDGj77fqCi1B2AaEkBYzE1SNzIf/?a=1128&ch=0&cr=0&dr=0&cd=0%7C0%7C0%7C0&cv=1&br=856&bt=856&cs=0&ds=3&mime_type=video_mp4'
+          ALT='https://f.666916.xyz/res/dl?url=https%3A%2F%2Fexample.com&hash=6015aa2fa79b795e0be905aaa706656f71419fcde324c132914e92911199272d&timestamp=1791036195880'
+          probe() {
+            local name="$1" url="$2"
+            echo "===== $name ====="
+            curl -sS -L --max-time 60 -A "$UA" -e 'https://www.douyin.com/' \
+              -D "probe/${name}.headers" -o "probe/${name}.bin" -w "http_code=%{http_code} size=%{size_download} type=%{content_type} redir=%{num_redirects} url=%{url_effective}\n" \
+              "$url" || echo "curl_fail=$?"
+            echo "-- headers --"
+            cat "probe/${name}.headers" || true
+            echo "-- file --"
+            file "probe/${name}.bin" || true
+            echo "-- xxd --"
+            xxd "probe/${name}.bin" | head -8 || true
+            echo "-- text head --"
+            python3 - << PY
+          p="probe/${name}.bin"
+          data=open(p,"rb").read(800)
+          print(data[:800])
           PY
-          fps=$(cat /tmp/fps.txt)
-          ffmpeg -y -i "$f" -vf "${fps},scale=900:-1" -q:v 5 "$GITHUB_WORKSPACE/out/frames/f%04d.jpg"
-          ffmpeg -y -i "$f" -vn -ac 1 -ar 16000 -c:a libmp3lame -b:a 48k "$GITHUB_WORKSPACE/out/audio.mp3" || true
-          find "$GITHUB_WORKSPACE/out/frames" -type f | wc -l | tee -a "$GITHUB_WORKSPACE/out/log.txt"
-          rm -f "$f"
-      - name: Transcribe
-        if: success()
-        run: |
-          set -u
-          if [ ! -f "$GITHUB_WORKSPACE/out/audio.mp3" ]; then
-            echo 'no audio'
-            exit 0
-          fi
-          pip install -q faster-whisper
+          }
+          {
+            probe proxy "$PROXY"
+            probe direct "$DIRECT"
+            probe alt "$ALT"
+            probe home "https://dl1.534532.xyz/"
+          } > probe/log.txt 2>&1 || true
+          # publish a short summary as a workflow notice so we can read it via the API
           python3 - << 'PY'
-          import os
-          from faster_whisper import WhisperModel
-          audio = os.environ["GITHUB_WORKSPACE"] + "/out/audio.mp3"
-          model = WhisperModel("small", device="cpu", compute_type="int8")
-          segments, info = model.transcribe(audio, language="zh", vad_filter=True)
-          lines = [f"# lang={info.language} p={info.language_probability:.3f} dur={info.duration:.1f}"]
-          for s in segments:
-              lines.append(f"[{s.start:7.2f} -> {s.end:7.2f}] {s.text.strip()}")
-          text = "\n".join(lines) + "\n"
-          open(os.environ["GITHUB_WORKSPACE"] + "/out/transcript.txt", "w", encoding="utf-8").write(text)
-          print(text[:4000])
+          from pathlib import Path
+          text = Path("probe/log.txt").read_text(errors="replace")
+          # keep notices under annotation limits
+          chunk = 3500
+          for i in range(0, min(len(text), 14000), chunk):
+              part = text[i:i+chunk]
+              part = part.replace("%","%25").replace("\r","%0D").replace("\n","%0A")
+              print(f"::notice title=probe-{i}::{part}")
+          print(f"::notice title=probe-len::bytes={len(text)}")
           PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: lecture
-          path: out
-          if-no-files-found: warn
-          retention-days: 1
+      - name: Commit probe
+        run: |
+          git config user.email "266473328+zhzx2026@users.noreply.github.com"
+          git config user.name "zhzx2026"
+          # don't commit huge binaries
+          find probe -type f -size +200k -delete
+          git add probe || true
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+            exit 0
+          fi
+          git commit -m "Add lecture download probe logs"
+          git push origin HEAD:arena/01a1075d-arena
