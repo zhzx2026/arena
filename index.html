@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一幅图搞懂三圈环流 · 高空西风</title>
+<style>
+  :root {
+    --ink: #f4efe4;
+    --ink-dim: rgba(244,239,228,.72);
+    --warm: #ffb3a2;
+    --cold: #9ed4ff;
+    --west: #c6e7a0;
+    --jet: #ffe08a;
+    --sun: #ffd56b;
+    --room: #12100e;
+    --wood-1: #c48955;
+    --wood-2: #6d4124;
+    --board-1: #1c684c;
+    --board-2: #123f30;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    min-height: 100%;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 420px at 50% -10%, rgba(255,214,150,.08), transparent 60%),
+      linear-gradient(180deg, #1c1814 0%, var(--room) 40%, #0c0b0a 100%);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 22px 16px 40px;
+  }
+  header.top {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-end;
+    margin-bottom: 14px;
+  }
+  header.top h1 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: .04em;
+    font-weight: 700;
+  }
+  header.top p {
+    margin: 4px 0 0;
+    color: rgba(244,239,228,.62);
+    font-size: 13px;
+  }
+  header.top a {
+    color: var(--jet);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,224,138,.35);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .stage {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 16px;
+    align-items: start;
+  }
+  .frame {
+    background:
+      linear-gradient(160deg, #d7a36e 0%, #8a532c 18%, #5b351c 48%, #a86b3a 100%);
+    padding: 14px 14px 42px;
+    border-radius: 12px;
+    box-shadow: 0 22px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.25);
+    position: relative;
+  }
+  .tray {
+    position: absolute;
+    left: 18px; right: 18px; bottom: 10px;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(#4a2e1c, #2b1a10);
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.45);
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 0 12px 3px;
+  }
+  .chalkbit {
+    width: 36px; height: 8px; border-radius: 3px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.25);
+  }
+  .board {
+    position: relative;
+    background:
+      radial-gradient(ellipse at 50% 38%, rgba(255,248,230,.09), transparent 58%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0 1px, transparent 1px 3px),
+      linear-gradient(180deg, #217556 0%, #165a42 42%, #103e2e 100%);
+    border-radius: 4px;
+    box-shadow: inset 0 0 70px rgba(0,0,0,.38), inset 0 0 0 1px rgba(255,255,255,.04);
+    overflow: hidden;
+  }
+  .board svg { display: block; width: 100%; height: auto; }
+  .chalk {
+    font-family: "KaiTi", "STKaiti", "楷体", "Songti SC", "Noto Serif SC", serif;
+  }
+  .js [data-step] { opacity: 0; }
+  .js [data-step].on { opacity: 1; transition: opacity .45s ease; }
+  .js [data-step].erase {
+    opacity: 0;
+    transition: opacity .7s ease;
+  }
+  .draw {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .panel {
+    background: rgba(255,248,236,.04);
+    border: 1px solid rgba(244,239,228,.1);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    min-height: 100%;
+  }
+  .kicker {
+    font-size: 12px;
+    letter-spacing: .14em;
+    color: var(--jet);
+    margin: 0 0 6px;
+  }
+  .panel h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-family: "KaiTi", "STKaiti", "楷体", serif;
+  }
+  .time {
+    display: inline-block;
+    font-size: 12px;
+    color: rgba(244,239,228,.55);
+    border: 1px solid rgba(244,239,228,.15);
+    border-radius: 999px;
+    padding: 2px 8px;
+    margin-bottom: 10px;
+  }
+  .say {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: rgba(244,239,228,.9);
+  }
+  .say + .say { margin-top: 8px; }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  button, .btn {
+    appearance: none;
+    border: 1px solid rgba(244,239,228,.16);
+    background: rgba(255,255,255,.04);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.primary {
+    background: #f4efe4;
+    color: #1a140f;
+    border-color: transparent;
+    font-weight: 700;
+  }
+  button:hover { border-color: rgba(244,239,228,.4); }
+  button:disabled { opacity: .4; cursor: default; }
+  .timeline {
+    margin-top: 14px;
+    display: grid;
+    gap: 6px;
+  }
+  .ch {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 8px;
+    align-items: center;
+    text-align: left;
+    width: 100%;
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(244,239,228,.72);
+    font-size: 12.5px;
+  }
+  .ch.on {
+    background: rgba(255,224,138,.08);
+    border-color: rgba(255,224,138,.22);
+    color: var(--ink);
+  }
+  .ch b { font-weight: 600; color: var(--jet); font-variant-numeric: tabular-nums; }
+  footer.note {
+    margin-top: 14px;
+    color: rgba(244,239,228,.42);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  @media (max-width: 900px) {
+    .stage { grid-template-columns: 1fr; }
+    header.top { flex-direction: column; align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .js [data-step] { transition: none !important; }
+    .draw { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>一幅图搞懂三圈环流、高空西风</h1>
+      <p>第7集 · 川不过气 · 边画边写讲知识 · 按原片章节顺序重绘板书</p>
+    </div>
+    <a href="https://www.douyin.com/video/7579866733588301417" target="_blank" rel="noreferrer">打开原片</a>
+  </header>
+
+  <div class="stage">
+    <div>
+      <div class="frame">
+        <div class="board">
+          <svg id="board" viewBox="0 0 1280 740" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="三圈环流板书">
+            <defs>
+              <marker id="aw" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M1 1.6 L10.2 6 L1 10.4 Z" fill="#f4efe4"/>
+              </marker>
+              <marker id="ar" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M1 1.6 L10.2 6 L1 10.4 Z" fill="#ffb3a2"/>
+              </marker>
+              <marker id="ab" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M1 1.6 L10.2 6 L1 10.4 Z" fill="#9ed4ff"/>
+              </marker>
+              <marker id="ag" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M1 1.6 L10.2 6 L1 10.4 Z" fill="#c6e7a0"/>
+              </marker>
+              <marker id="ay" viewBox="0 0 12 12" refX="9" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+                <path d="M1 1.6 L10.2 6 L1 10.4 Z" fill="#ffe08a"/>
+              </marker>
+              <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(42)">
+                <line x1="0" y1="0" x2="0" y2="7" stroke="rgba(244,239,228,.2)" stroke-width="1"/>
+              </pattern>
+              <style>
+                text { font-family: KaiTi, STKaiti, "楷体", "Songti SC", "PingFang SC", sans-serif; }
+                .draw { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+              </style>
+            </defs>
+
+            <rect width="1280" height="740" fill="#165a42"/>
+            <ellipse cx="280" cy="320" rx="160" ry="60" fill="rgba(255,255,255,.035)"/>
+            <ellipse cx="560" cy="240" rx="110" ry="40" fill="rgba(255,255,255,.03)"/>
+
+            <g id="g-title" data-step="0">
+              <text x="36" y="46" fill="#ffe08a" font-size="32">一幅图搞懂三圈环流</text>
+              <text x="348" y="46" fill="#f4efe4" font-size="26">· 高空西风</text>
+              <text x="36" y="74" fill="rgba(244,239,228,.6)" font-size="15">北半球剖面　赤道在左　北极在右</text>
+            </g>
+
+            <g id="g-frame" data-step="0">
+              <line class="draw" fill="none" data-draw="1" x1="70" y1="198" x2="800" y2="186" stroke="rgba(244,239,228,.38)" stroke-width="1.5" stroke-dasharray="2 7"/>
+              <text x="16" y="196" fill="rgba(244,239,228,.72)" font-size="14">高空</text>
+              <path class="draw" fill="none" data-draw="1" d="M60 500 C 220 514, 480 488, 800 506" stroke="#f4efe4" stroke-width="3"/>
+              <path d="M60 512 C 220 526, 480 500, 800 518 L800 548 C480 532, 220 558, 60 544 Z" fill="url(#hatch)"/>
+              <text x="16" y="518" fill="rgba(244,239,228,.72)" font-size="14">近地面</text>
+              <g fill="rgba(244,239,228,.8)" font-size="15" text-anchor="middle">
+                <line x1="110" y1="176" x2="110" y2="500" stroke="rgba(244,239,228,.2)" stroke-dasharray="3 6"/>
+                <line x1="310" y1="176" x2="310" y2="500" stroke="rgba(244,239,228,.2)" stroke-dasharray="3 6"/>
+                <line x1="530" y1="176" x2="530" y2="500" stroke="rgba(244,239,228,.2)" stroke-dasharray="3 6"/>
+                <line x1="750" y1="176" x2="750" y2="500" stroke="rgba(244,239,228,.2)" stroke-dasharray="3 6"/>
+                <text x="110" y="572">赤道 0°</text>
+                <text x="310" y="572">30°N</text>
+                <text x="530" y="572">60°N</text>
+                <text x="750" y="572">北极 90°</text>
+              </g>
+              </g>
+
+            <g id="g-heat" data-step="1">
+              <circle cx="48" cy="340" r="11" fill="none" stroke="#ffd56b" stroke-width="1.8"/>
+              <g stroke="#ffd56b" stroke-width="1.4">
+                <line x1="48" y1="322" x2="48" y2="316"/>
+                <line x1="48" y1="364" x2="48" y2="358"/>
+                <line x1="30" y1="340" x2="36" y2="340"/>
+                <line x1="66" y1="340" x2="60" y2="340"/>
+              </g>
+              <text x="28" y="386" fill="#ffd56b" font-size="13">受热</text>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ar)" marker-end="url(#ar)" d="M110 492 C96 410, 98 300, 118 214" stroke="#ffb3a2" stroke-width="3.4"/>
+            </g>
+
+            <g id="g-single" data-step="1" data-hide="2">
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#aw)" marker-end="url(#aw)" d="M124 208 C 280 156, 520 150, 734 204" stroke="#f4efe4" stroke-width="2.6" stroke-dasharray="7 6"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ab)" marker-end="url(#ab)" d="M742 214 C760 320, 762 420, 742 490" stroke="#9ed4ff" stroke-width="3.2"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#aw)" marker-end="url(#aw)" d="M732 512 C 500 548, 260 544, 120 504" stroke="rgba(244,239,228,.85)" stroke-width="2.5" stroke-dasharray="7 6"/>
+              <text x="250" y="124" fill="#ffe08a" font-size="18">单圈环流 · 假设不自转</text>
+            </g>
+
+            <g id="g-hadley" data-step="2">
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#aw)" marker-end="url(#aw)" d="M126 210 C 190 184, 250 186, 296 214" stroke="#f4efe4" stroke-width="3.2"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ab)" marker-end="url(#ab)" d="M304 220 C322 310, 322 410, 304 490" stroke="#9ed4ff" stroke-width="3.4"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ar)" marker-end="url(#ar)" d="M296 510 C 230 526, 170 524, 118 500" stroke="#ffb3a2" stroke-width="3"/>
+              <text x="140" y="160" fill="#ffe08a" font-size="14">高空右偏，堆成西风</text>
+              <text x="145" y="448" fill="#ffb3a2" font-size="16">东北信风</text>
+              <text x="86" y="468" fill="#ffb3a2" font-size="22">L</text>
+              <text x="324" y="468" fill="#9ed4ff" font-size="22">H</text>
+              <text x="78" y="596" fill="#ffb3a2" font-size="13" text-anchor="middle">赤道低压</text>
+              <text x="310" y="596" fill="#9ed4ff" font-size="13" text-anchor="middle">副热带高压</text>
+            </g>
+
+            <g id="g-coriolis" data-step="2">
+              <circle cx="1168" cy="168" r="34" fill="none" stroke="rgba(244,239,228,.4)" stroke-width="1.4"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ay)" marker-end="url(#ay)" d="M1168 196 C1168 168, 1168 150, 1194 144" stroke="#ffe08a" stroke-width="2.3"/>
+              <text x="1110" y="118" fill="#ffe08a" font-size="14">北半球向右偏</text>
+            </g>
+
+            <g id="g-polar" data-step="3">
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ab)" marker-end="url(#ab)" d="M742 214 C760 320, 762 420, 742 490" stroke="#9ed4ff" stroke-width="3.3"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ab)" marker-end="url(#ab)" d="M732 510 C 670 526, 600 524, 548 500" stroke="#9ed4ff" stroke-width="3"/>
+              <text x="590" y="448" fill="#9ed4ff" font-size="16">极地东风</text>
+              <text x="764" y="468" fill="#9ed4ff" font-size="22">H</text>
+              <text x="750" y="596" fill="#9ed4ff" font-size="13" text-anchor="middle">极地高压</text>
+            </g>
+
+            <g id="g-west" data-step="3">
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ag)" marker-end="url(#ag)" d="M318 510 C 390 526, 460 524, 512 500" stroke="#c6e7a0" stroke-width="3.1"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ar)" marker-end="url(#ar)" d="M530 492 C546 400, 542 290, 522 216" stroke="#ffb3a2" stroke-width="3.3"/>
+              <text x="360" y="448" fill="#c6e7a0" font-size="16">盛行西风</text>
+              <text x="544" y="468" fill="#ffb3a2" font-size="22">L</text>
+              <text x="530" y="596" fill="#ffb3a2" font-size="13" text-anchor="middle">副极地低压</text>
+            </g>
+
+            <g id="g-cells" data-step="4">
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#aw)" marker-end="url(#aw)" d="M516 212 C 450 184, 380 186, 310 214" stroke="rgba(244,239,228,.82)" stroke-width="2.3" stroke-dasharray="6 5"/>
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#aw)" marker-end="url(#aw)" d="M540 210 C 610 182, 690 184, 728 208" stroke="rgba(244,239,228,.82)" stroke-width="2.3"/>
+              <path d="M118 220 C 96 340, 104 450, 120 492 C 200 512, 260 508, 300 490 C 318 380, 310 270, 296 220 C 230 190, 160 192, 118 220 Z" fill="rgba(255,179,162,.14)"/>
+              <path d="M308 222 C 322 340, 324 450, 316 492 C 400 514, 470 508, 516 490 C 534 370, 526 270, 516 218 C 440 186, 360 188, 308 222 Z" fill="rgba(198,231,160,.13)"/>
+              <path d="M528 218 C 544 340, 546 450, 536 492 C 620 514, 700 508, 736 490 C 756 370, 750 270, 736 216 C 660 184, 580 186, 528 218 Z" fill="rgba(158,212,255,.14)"/>
+              <text x="155" y="350" fill="#ffb3a2" font-size="15">低纬环流</text>
+              <text x="155" y="370" fill="rgba(255,179,162,.8)" font-size="13">哈德莱 0–30°</text>
+              <text x="355" y="350" fill="#c6e7a0" font-size="15">中纬环流</text>
+              <text x="355" y="370" fill="rgba(198,231,160,.8)" font-size="13">费雷尔 30–60°</text>
+              <text x="575" y="350" fill="#9ed4ff" font-size="15">高纬环流</text>
+              <text x="575" y="370" fill="rgba(158,212,255,.85)" font-size="13">极地 60–90°</text>
+            </g>
+
+            <g id="g-cause" data-step="5">
+              <text x="110" y="618" fill="#ffb3a2" font-size="13" text-anchor="middle">热力</text>
+              <text x="310" y="618" fill="#ffe08a" font-size="13" text-anchor="middle">动力</text>
+              <text x="530" y="618" fill="#ffe08a" font-size="13" text-anchor="middle">动力</text>
+              <text x="750" y="618" fill="#9ed4ff" font-size="13" text-anchor="middle">热力</text>
+            </g>
+
+            <g id="g-front" data-step="6">
+              <path class="draw" fill="none" data-draw="1" d="M500 500 C 540 420, 568 340, 596 250" stroke="#f4efe4" stroke-width="2.5"/>
+              <g fill="#9ed4ff">
+                <path d="M518 430 l12 0 l-6 -10 z"/>
+                <path d="M540 378 l12 0 l-6 -10 z"/>
+                <path d="M560 328 l12 0 l-6 -10 z"/>
+              </g>
+              <path d="M584 244 q12 -16 28 -4 q8 14 -4 18 q-16 6 -24 -4 z" fill="rgba(244,239,228,.78)"/>
+              <path d="M608 238 q14 -14 26 -2 q7 12 -5 16 q-14 5 -21 -5 z" fill="rgba(244,239,228,.5)"/>
+              <g stroke="#9ed4ff" stroke-width="1.3">
+                <line x1="508" y1="512" x2="504" y2="528"/>
+                <line x1="522" y1="514" x2="518" y2="532"/>
+                <line x1="536" y1="512" x2="532" y2="526"/>
+              </g>
+              <text x="612" y="270" fill="#f4efe4" font-size="16">极锋</text>
+            </g>
+
+            <g id="g-jet" data-step="6">
+              <path class="draw" fill="none" data-draw="1" data-marker="url(#ay)" marker-end="url(#ay)" d="M150 128 C 300 108, 470 118, 620 104 C 690 98, 740 112, 790 102" stroke="#ffe08a" stroke-width="5.5"/>
+              <circle cx="310" cy="114" r="6" fill="none" stroke="#ffe08a" stroke-width="1.5"/>
+              <circle cx="545" cy="108" r="6" fill="none" stroke="#ffe08a" stroke-width="1.5"/>
+              <text x="250" y="96" fill="#ffe08a" font-size="13">副热带急流</text>
+              <text x="500" y="88" fill="#ffe08a" font-size="13">极锋急流</text>
+            </g>
+
+            <g font-size="15">
+              <g id="n0" data-step="0" fill="#ffe08a">
+                <text x="850" y="250">板书</text>
+                <text x="850" y="274" fill="#f4efe4" font-size="14">先画骨架，再长环流</text>
+              </g>
+              <g id="n1" data-step="1" fill="#f4efe4">
+                <text x="850" y="308">热力环流三句</text>
+                <text x="850" y="330" font-size="14" fill="rgba(244,239,228,.82)">受热上升，近地面变低压</text>
+                <text x="850" y="350" font-size="14" fill="rgba(244,239,228,.82)">冷却下沉，近地面变高压</text>
+                <text x="850" y="370" font-size="14" fill="rgba(244,239,228,.82)">水平：高压流向低压</text>
+                <text x="850" y="392" font-size="14" fill="#ffe08a">不自转，就是单圈环流</text>
+              </g>
+              <g id="n2" data-step="2" fill="#f4efe4">
+                <text x="850" y="424">加上自转</text>
+                <text x="850" y="446" font-size="14" fill="rgba(244,239,228,.82)">北半球向右偏</text>
+                <text x="850" y="466" font-size="14" fill="rgba(244,239,228,.82)">30°N 上空堆积下沉</text>
+                <text x="850" y="486" font-size="14" fill="#9ed4ff">副高 = 动力原因</text>
+              </g>
+              <g id="n3" data-step="3" fill="#f4efe4">
+                <text x="850" y="518">近地面三支风</text>
+                <text x="850" y="540" font-size="14" fill="#ffb3a2">东北信风：副高流向赤道</text>
+                <text x="850" y="560" font-size="14" fill="#c6e7a0">盛行西风：副高流向 60°</text>
+                <text x="850" y="580" font-size="14" fill="#9ed4ff">极地东风：极高流向 60°</text>
+              </g>
+              <g id="n4" data-step="4" fill="#ffe08a">
+                <text x="850" y="612" font-size="15">三个圈闭合</text>
+                <text x="850" y="634" font-size="14" fill="rgba(244,239,228,.82)">低纬 · 中纬 · 高纬</text>
+              </g>
+              <g id="n5" data-step="5" fill="#ffe08a">
+                <text x="850" y="664" font-size="15">口诀</text>
+                <text x="850" y="686" font-size="14" fill="#f4efe4">赤道极地看冷热</text>
+                <text x="850" y="706" font-size="14" fill="#f4efe4">副高副极看动力</text>
+              </g>
+              <g id="n6" data-step="6" fill="#ffe08a">
+                <text x="1040" y="612" font-size="15">特殊情况</text>
+                <text x="1040" y="634" font-size="14" fill="#f4efe4">极锋</text>
+                <text x="1040" y="656" font-size="14" fill="#ffe08a">高空西风急流</text>
+                <text x="1040" y="678" font-size="13" fill="rgba(244,239,228,.8)">对流层顶，自西向东</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <div class="tray" aria-hidden="true">
+          <i class="chalkbit" style="background:#f4efe4"></i>
+          <i class="chalkbit" style="background:#ffe08a"></i>
+          <i class="chalkbit" style="background:#ffb3a2"></i>
+          <i class="chalkbit" style="background:#9ed4ff"></i>
+          <i class="chalkbit" style="background:#c6e7a0"></i>
+        </div>
+      </div>
+      <footer class="note">
+        板书按川不过气《第7集｜一幅图搞懂三圈环流、高空西风》的章节讲解重绘，不是原片逐帧拷贝。原片发布于 2025-12-04。北半球向右偏；南半球对称、向左偏，近地面对应东南信风、西北西风和东南极地东风。
+      </footer>
+    </div>
+
+    <aside class="panel">
+      <p class="kicker">听他怎么讲</p>
+      <h2 id="stepTitle">引言</h2>
+      <span class="time" id="stepTime">原片 00:00</span>
+      <div id="say"></div>
+      <div class="controls">
+        <button id="prev" type="button">上一笔</button>
+        <button id="play" class="primary" type="button">播放</button>
+        <button id="next" type="button">下一笔</button>
+        <button id="end" type="button">看完整板书</button>
+        <button id="save" type="button">下载 SVG</button>
+      </div>
+      <div class="timeline" id="timeline"></div>
+    </aside>
+  </div>
+</div>
+<script>
+const STEPS = [
+  {
+    t: "00:00",
+    title: "引言",
+    say: [
+      "今天这一幅图，专门把三圈环流和高空西风画清楚。",
+      "名字先别急着背。看它怎么从热力环流里长出来，画完你就记得住。"
+    ]
+  },
+  {
+    t: "00:27",
+    title: "热力环流的拓展",
+    say: [
+      "热力环流就三句：受热上升，近地面变成低压；冷却下沉，近地面变成高压；水平方向，空气从高压流向低压。",
+      "放到地球上，赤道最热，极地最冷。假如先不自转，赤道上升、极地下沉，高空从赤道流向极地，近地面再流回来。这就是单圈环流。"
+    ]
+  },
+  {
+    t: "02:19",
+    title: "三圈环流的形成",
+    say: [
+      "地球在自转。北半球水平运动的空气向右偏。",
+      "赤道上升以后，高空向北走，慢慢偏成西风，到北纬 30 度附近堆住，被迫下沉。近地面气压升高，这就是副热带高气压带。",
+      "副高下沉不是因为冷，是高空空气堆下来的，动力原因。赤道空气上升流走，形成赤道低气压带。"
+    ]
+  },
+  {
+    t: "04:17",
+    title: "气压带与风带",
+    say: [
+      "近地面空气从高压流向低压，再向右偏。",
+      "副高流向赤道，偏成东北风，就是东北信风。极地冷却下沉，形成极地高气压带，这是热力原因；往南偏成极地东风。",
+      "副高往北的一支偏成西南风，就是盛行西风。它和极地东风在 60 度附近碰上，暖空气被抬升，近地面形成副极地低气压带。"
+    ]
+  },
+  {
+    t: "07:30",
+    title: "三个环流圈",
+    say: [
+      "60 度抬升到高空的空气再向南北分流，三个圈就闭合了。",
+      "0 到 30 度是低纬环流，也叫哈德莱环流；30 到 60 度是中纬环流，也叫费雷尔环流；60 到 90 度是高纬环流，也叫极地环流。"
+    ]
+  },
+  {
+    t: "07:47",
+    title: "气压带的成因",
+    say: [
+      "四个气压带，成因只有两类。",
+      "赤道低气压带是受热上升，极地高气压带是冷却下沉，都是热力原因。副热带高气压带是高空堆积下沉，副极地低气压带是冷暖相遇后暖空气抬升，都是动力原因。",
+      "口诀：赤道极地看冷热，副高副极看动力。"
+    ]
+  },
+  {
+    t: "08:35",
+    title: "极锋与高空西风急流",
+    say: [
+      "60 度附近冷暖气团交界，锋面是斜的，暖空气爬到冷空气上面，这个锋叫极锋。",
+      "最后补一个特殊情况：高空西风急流。它在对流层顶部，自西向东。30 度上空是副热带急流，极锋上空是极锋急流，风速特别大。",
+      "所以近地面记信风、西风、极地东风；高空，尤其是中纬度高空，主导的是西风，急流是其中最强的那一支。"
+    ]
+  }
+];
+
+const board = document.getElementById("board");
+let index = 0;
+let playing = false;
+let timer = 0;
+
+function groups() {
+  return [...board.querySelectorAll("[data-step]")];
+}
+
+function chalkDash(path) {
+  const raw = path.getAttribute("stroke-dasharray");
+  if (!raw) return null;
+  const n = parseFloat(raw);
+  return n > 0 && n < 24 ? raw : null;
+}
+
+function armDraw(g, animate) {
+  const paths = [...g.querySelectorAll("[data-draw]")];
+  paths.forEach((path, i) => {
+    const len = path.getTotalLength ? path.getTotalLength() : 0;
+    const marker = path.getAttribute("data-marker");
+    const dash = chalkDash(path);
+    path.removeAttribute("marker-end");
+    if (!animate || !len) {
+      path.style.transition = "none";
+      path.style.strokeDasharray = dash || "none";
+      path.style.strokeDashoffset = "0";
+      if (marker) path.setAttribute("marker-end", marker);
+      return;
+    }
+    path.style.transition = "none";
+    path.style.strokeDasharray = `${len}`;
+    path.style.strokeDashoffset = `${len}`;
+    path.getBoundingClientRect();
+    const delay = 160 + i * 200;
+    path.style.transition = `stroke-dashoffset 850ms ease ${delay}ms`;
+    requestAnimationFrame(() => { path.style.strokeDashoffset = "0"; });
+    const done = () => {
+      if (dash) {
+        path.style.transition = "none";
+        path.style.strokeDasharray = dash;
+        path.style.strokeDashoffset = "0";
+      }
+      if (marker) path.setAttribute("marker-end", marker);
+      path.removeEventListener("transitionend", done);
+    };
+    path.addEventListener("transitionend", done);
+  });
+}
+
+function render(i, animate) {
+  index = i;
+  groups().forEach((g) => {
+    const step = Number(g.getAttribute("data-step"));
+    const hide = g.getAttribute("data-hide");
+    const visible = step <= i && !(hide && i >= Number(hide));
+    g.classList.toggle("on", visible && !(hide && i >= Number(hide)));
+    g.classList.toggle("erase", Boolean(hide) && i >= Number(hide) && step <= i);
+    if (visible) armDraw(g, animate && step === i);
+  });
+  const s = STEPS[i];
+  document.getElementById("stepTitle").textContent = s.title;
+  document.getElementById("stepTime").textContent = "原片 " + s.t;
+  document.getElementById("say").innerHTML = s.say.map((p) => `<p class="say">${p}</p>`).join("");
+  document.getElementById("prev").disabled = i === 0;
+  document.getElementById("next").disabled = i === STEPS.length - 1;
+  document.querySelectorAll(".ch").forEach((btn, n) => btn.classList.toggle("on", n === i));
+}
+
+function stop() {
+  playing = false;
+  clearTimeout(timer);
+  document.getElementById("play").textContent = "播放";
+}
+
+function play() {
+  playing = true;
+  document.getElementById("play").textContent = "暂停";
+  const wait = 5200 + STEPS[index].say.join("").length * 55;
+  timer = setTimeout(() => {
+    if (!playing) return;
+    if (index < STEPS.length - 1) {
+      render(index + 1, true);
+      play();
+    } else stop();
+  }, Math.min(wait, 14000));
+}
+
+document.getElementById("play").onclick = () => playing ? stop() : play();
+document.getElementById("prev").onclick = () => { stop(); render(Math.max(0, index - 1), true); };
+document.getElementById("next").onclick = () => { stop(); render(Math.min(STEPS.length - 1, index + 1), true); };
+document.getElementById("end").onclick = () => { stop(); render(STEPS.length - 1, false); };
+document.getElementById("save").onclick = () => {
+  const clone = board.cloneNode(true);
+  clone.querySelectorAll("[data-step]").forEach((g) => {
+    const step = Number(g.getAttribute("data-step"));
+    const hide = g.getAttribute("data-hide");
+    const visible = step <= index && !(hide && index >= Number(hide));
+    if (!visible) g.remove();
+    else g.setAttribute("opacity", "1");
+  });
+  clone.querySelectorAll(".draw").forEach((p) => {
+    p.style.strokeDasharray = "none";
+    p.style.strokeDashoffset = "0";
+    const marker = p.getAttribute("data-marker");
+    if (marker) p.setAttribute("marker-end", marker);
+  });
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const blob = new Blob(
+    [`<?xml version="1.0" encoding="UTF-8"?>\n` + clone.outerHTML],
+    { type: "image/svg+xml" }
+  );
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `三圈环流板书-${String(index + 1).padStart(2, "0")}.svg`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+const timeline = document.getElementById("timeline");
+STEPS.forEach((s, n) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "ch";
+  b.innerHTML = `<b>${s.t}</b><span>${s.title}</span>`;
+  b.onclick = () => { stop(); render(n, true); };
+  timeline.appendChild(b);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") document.getElementById("next").click();
+  if (e.key === "ArrowLeft") document.getElementById("prev").click();
+  if (e.key === " ") { e.preventDefault(); document.getElementById("play").click(); }
+});
+
+document.documentElement.classList.add("js");
+render(0, true);
+</script>
+</body>
+</html>
