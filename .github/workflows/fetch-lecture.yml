@@ -1,0 +1,48 @@
+name: fetch-lecture
+on:
+  workflow_dispatch:
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Probe and download
+        run: |
+          set -u
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          URL='https://dl1.534532.xyz/res/dl?url=https%3A%2F%2Fv26-cold.douyinvod.com%2F37430db275efa70c6479aba19997f9e4%2F6ac11b6f%2Fvideo%2Ftos%2Fcn%2Ftos-cn-ve-15%2Fo8AQxFSaeYBRDGj77fqCi1B2AaEkBYzE1SNzIf%2F%3Fa%3D1128%26ch%3D0%26cr%3D0%26dr%3D0%26cd%3D0%257C0%257C0%257C0%26cv%3D1%26br%3D856%26bt%3D856%26cs%3D0%26ds%3D3%26ft%3DMgtpHQQqUYqfJEZPo0OW_QYaUqiXdpOY9VJEQzO9sbPD-Ipz%26mime_type%3Dvideo_mp4%26qs%3D0%26rc%3DNmRlaTU0ZzNlaTdmOjg5NUBpanQ5Z3U5cjlrNzMzNGkzM0BhMC8xYi00XzAxYmAtNF80YSNzZl8tMmRrY2xhLS1kLWFzcw%253D%253D%26btag%3D80010e000b7001%26cquery%3D100y_10sH%26dy_q%3D1791036195%26feature_id%3Dfea919893f650a8c49286568590446ef%26l%3D2026100322031548870A6C3B59E32932A7&hash=6015aa2fa79b795e0be905aaa706656f71419fcde324c132914e92911199272d&timestamp=1791036195880'
+          curl -L --retry 3 --retry-all-errors --max-time 180 \
+            -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' \
+            -D "$GITHUB_WORKSPACE/out/headers.txt" \
+            -o "$GITHUB_WORKSPACE/out/video.bin" \
+            "$URL" || echo "curl_exit=$?"
+          ls -lh "$GITHUB_WORKSPACE/out" || true
+          file "$GITHUB_WORKSPACE/out/video.bin" || true
+          wc -c "$GITHUB_WORKSPACE/out/video.bin" || true
+          echo '--- headers ---'
+          cat "$GITHUB_WORKSPACE/out/headers.txt" || true
+          echo '--- head bytes ---'
+          xxd "$GITHUB_WORKSPACE/out/video.bin" | head -5 || true
+      - name: Extract frames if video
+        run: |
+          set -u
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          f="$GITHUB_WORKSPACE/out/video.bin"
+          if ! ffprobe -v error -show_entries format=duration,format_name,size -of default=nw=1 "$f"; then
+            echo 'NOT_A_VIDEO'
+            exit 0
+          fi
+          mkdir -p "$GITHUB_WORKSPACE/out/frames"
+          ffmpeg -y -i "$f" -vf "fps=1,scale=960:-1" -q:v 4 "$GITHUB_WORKSPACE/out/frames/f%04d.jpg"
+          ffmpeg -y -i "$f" -vn -ac 1 -ar 16000 -c:a libmp3lame -b:a 64k "$GITHUB_WORKSPACE/out/audio.mp3" || true
+          ffprobe -v error -show_entries format=duration:stream=codec_type,width,height,codec_name -of json "$f" > "$GITHUB_WORKSPACE/out/probe.json"
+          find "$GITHUB_WORKSPACE/out/frames" -type f | wc -l
+          # drop the bulky video from the artifact; frames+audio are enough
+          rm -f "$f"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lecture
+          path: out
+          if-no-files-found: warn
+          retention-days: 1
